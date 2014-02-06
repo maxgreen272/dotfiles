@@ -1,4 +1,13 @@
-# Paul's dotfiles
+# Joe's dotfiles
+
+
+## Installation
+
+```bash
+git clone https://github.com/paulirish/dotfiles.git && cd dotfiles && ./sync.sh
+```
+
+To update later on, just run the sync again.
 
 [mathias's readme](https://github.com/mathiasbynens/dotfiles/) is awesome. go read it.
 
@@ -6,7 +15,7 @@ This repo is mostly for me but you're welcome to make suggestions. Mathias's is 
 
 ## install the necessary apps
 
-My basic setup is captured in `install-deps.sh` which adds homebrew, z, nave, etc.
+My basic setup is captured in `install-deps.sh` which adds homebrew, Pygment.
 
 ## private config
 
@@ -76,12 +85,3 @@ I recommend getting a [`.jshintrc`](https://github.com/jshint/node-jshint/blob/m
 * `.gitignore`
 
 * `.inputrc` - config for bash readline
-
-
-## Installation
-
-```bash
-git clone https://github.com/paulirish/dotfiles.git && cd dotfiles && ./sync.sh
-```
-
-To update later on, just run the sync again.
