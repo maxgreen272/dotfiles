@@ -34,9 +34,9 @@ function scpp() {
 			continue
 		fi
 	
-		# parse the response and output our stuff
-		url=$(echo $response | sed -r 's/.*<original_image>(.*)<\/original_image>.*/\1/')
-		deleteurl=$(echo $response | sed -r 's/.*<delete_page>(.*)<\/delete_page>.*/\1/')
+		# parse the response and output our stuff use sed -E on mac sed -r on linux 
+		url=$(echo $response | sed -E 's/.*<original_image>(.*)<\/original_image>.*/\1/')
+		deleteurl=$(echo $response | sed -E 's/.*<delete_page>(.*)<\/delete_page>.*/\1/')
 		echo $url
 		echo "Delete page: $deleteurl" >&2
 	
