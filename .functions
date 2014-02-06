@@ -1,8 +1,52 @@
 # lets toss an image onto my server and pbcopy that bitch.
 function scpp() {
-    scp "$1" aurgasm@aurgasm.us:~/paulirish.com/i;
-    echo "http://paulirish.com/i/$1" | pbcopy;
-    echo "Copied to clipboard: http://paulirish.com/i/$1"
+
+	apikey="b3625162d3418ac51a9ee805b1840452"
+	
+	clip=""
+	errors=false
+	
+	# loop through arguments
+	while [ $# -gt 0 ]; do
+		file="$1"
+		shift
+	
+		# check file exists
+		if [ ! -f "$file" ]; then
+			echo "file '$file' doesn't exist, skipping" >&2
+			errors=true
+			continue
+		fi
+	
+		# upload the image
+		response=$(curl -F "key=$apikey" -H "Expect: " -F "image=@$file" \
+			http://imgur.com/api/upload.xml 2>/dev/null)
+		# the "Expect: " header is to get around a problem when using this through 
+		# the Squid proxy. Not sure if it's a Squid bug or what.
+		if [ $? -ne 0 ]; then
+			echo "Upload failed" >&2
+			errors=true
+			continue
+		elif [ $(echo $response | grep -c "<error_msg>") -gt 0 ]; then
+			echo "Error message from imgur:" >&2
+			echo $response | sed -r 's/.*<error_msg>(.*)<\/error_msg>.*/\1/' >&2
+			errors=true
+			continue
+		fi
+	
+		# parse the response and output our stuff
+		url=$(echo $response | sed -r 's/.*<original_image>(.*)<\/original_image>.*/\1/')
+		deleteurl=$(echo $response | sed -r 's/.*<delete_page>(.*)<\/delete_page>.*/\1/')
+		echo $url
+		echo "Delete page: $deleteurl" >&2
+	
+		# append the URL to a string so we can put them all on the clipboard later
+		clip="$clip$url
+	"
+	done
+
+    echo $clip | pbcopy;
+    echo "Copied to clipboard: $clip"
 }
 
 # Start an HTTP server from a directory, optionally specifying the port
