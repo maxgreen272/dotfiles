@@ -1,3 +1,10 @@
+#Start a php server on a random port
+function server(){
+        port=`php -r "echo rand(2000,10000);"`
+        open "http://localhost:${port}/"
+        php -S localhost:$port $1
+}
+
 # lets toss an image onto my server and pbcopy that bitch.
 function imgur() {
 
