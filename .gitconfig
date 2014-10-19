@@ -27,7 +27,3 @@
 	log = true
 [push]
 	default = simple
-[user]
-        name = Joe Green
-        email = joe.green0991@gmail.com
-
