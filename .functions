@@ -1,106 +1,96 @@
-#Start a php server on a random port
-function server(){
-        port=`php -r "echo rand(2000,10000);"`
-        open "http://localhost:${port}/"
-        php -S localhost:$port $1
+#!/usr/bin/env bash
+
+# Create a new directory and enter it
+function mkd() {
+	mkdir -p "$@" && cd "$_";
 }
 
-# lets toss an image onto my server and pbcopy that bitch.
-function imgur() {
-
-	apikey="b3625162d3418ac51a9ee805b1840452"
-	
-	clip=""
-	errors=false
-	
-	# loop through arguments
-	while [ $# -gt 0 ]; do
-		file="$1"
-		shift
-	
-		# check file exists
-		if [ ! -f "$file" ]; then
-			echo "file '$file' doesn't exist, skipping" >&2
-			errors=true
-			continue
-		fi
-	
-		# upload the image
-		response=$(curl -F "key=$apikey" -H "Expect: " -F "image=@$file" \
-			http://imgur.com/api/upload.xml 2>/dev/null)
-		# the "Expect: " header is to get around a problem when using this through 
-		# the Squid proxy. Not sure if it's a Squid bug or what.
-		if [ $? -ne 0 ]; then
-			echo "Upload failed" >&2
-			errors=true
-			continue
-		elif [ $(echo $response | grep -c "<error_msg>") -gt 0 ]; then
-			echo "Error message from imgur:" >&2
-			echo $response | sed -E 's/.*<error_msg>(.*)<\/error_msg>.*/\1/' >&2
-			errors=true
-			continue
-		fi
-	
-		# parse the response and output our stuff use sed -E on mac sed -r on linux 
-		url=$(echo $response | sed -E 's/.*<original_image>(.*)<\/original_image>.*/\1/')
-		deleteurl=$(echo $response | sed -E 's/.*<delete_page>(.*)<\/delete_page>.*/\1/')
-		echo $url
-		echo "Delete page: $deleteurl" >&2
-	
-		# append the URL to a string so we can put them all on the clipboard later
-		clip="$clip$url
-	"
-	done
-
-    echo $clip | pbcopy;
-    echo "Copied to clipboard: $clip"
+# Change working directory to the top-most Finder window location
+function cdf() { # short for `cdfinder`
+	cd "$(osascript -e 'tell app "Finder" to POSIX path of (insertion location as alias)')";
 }
 
-# Copy w/ progress
-cp_p () {
-  rsync -WavP --human-readable --progress $1 $2
-}
+# Create a .tar.gz archive, using `zopfli`, `pigz` or `gzip` for compression
+function targz() {
+	local tmpFile="${@%/}.tar";
+	tar -cvf "${tmpFile}" --exclude=".DS_Store" "${@}" || return 1;
 
-# take this repo remove the .git stuff.
-function gitclean(){
-	find . -name ".git" -exec rm -rf {} \;
-}
+	size=$(
+		stat -f"%z" "${tmpFile}" 2> /dev/null; # macOS `stat`
+		stat -c"%s" "${tmpFile}" 2> /dev/null;  # GNU `stat`
+	);
 
-# Extract archives - use: extract <file>
-# Based on http://dotfiles.org/~pseup/.bashrc
-function extract() {
-	if [ -f "$1" ] ; then
-		local filename=$(basename "$1")
-		local foldername="${filename%%.*}"
-		local fullpath=`perl -e 'use Cwd "abs_path";print abs_path(shift)' "$1"`
-		local didfolderexist=false
-		if [ -d "$foldername" ]; then
-			didfolderexist=true
-			read -p "$foldername already exists, do you want to overwrite it? (y/n) " -n 1
-			echo
-			if [[ $REPLY =~ ^[Nn]$ ]]; then
-				return
-			fi
-		fi
-		mkdir -p "$foldername" && cd "$foldername"
-		case $1 in
-			*.tar.bz2) tar xjf "$fullpath" ;;
-			*.tar.gz) tar xzf "$fullpath" ;;
-			*.tar.xz) tar Jxvf "$fullpath" ;;
-			*.tar.Z) tar xzf "$fullpath" ;;
-			*.tar) tar xf "$fullpath" ;;
-			*.taz) tar xzf "$fullpath" ;;
-			*.tb2) tar xjf "$fullpath" ;;
-			*.tbz) tar xjf "$fullpath" ;;
-			*.tbz2) tar xjf "$fullpath" ;;
-			*.tgz) tar xzf "$fullpath" ;;
-			*.txz) tar Jxvf "$fullpath" ;;
-			*.zip) unzip "$fullpath" ;;
-			*.bz2) bzip2 -dk "$fullpath" ;;
-			*.gz) gzip -dk "$fullpath" ;;
-			*) echo "'$1' cannot be extracted via extract()" && cd .. && ! $didfolderexist && rm -r "$foldername" ;;
-		esac
+	local cmd="";
+	if (( size < 52428800 )) && hash zopfli 2> /dev/null; then
+		# the .tar file is smaller than 50 MB and Zopfli is available; use it
+		cmd="zopfli";
 	else
-		echo "'$1' is not a valid file"
+		if hash pigz 2> /dev/null; then
+			cmd="pigz";
+		else
+			cmd="gzip";
+		fi;
+	fi;
+
+	echo "Compressing .tar ($((size / 1000)) kB) using \`${cmd}\`…";
+	"${cmd}" -v "${tmpFile}" || return 1;
+	[ -f "${tmpFile}" ] && rm "${tmpFile}";
+
+	zippedSize=$(
+		stat -f"%z" "${tmpFile}.gz" 2> /dev/null; # macOS `stat`
+		stat -c"%s" "${tmpFile}.gz" 2> /dev/null; # GNU `stat`
+	);
+
+	echo "${tmpFile}.gz ($((zippedSize / 1000)) kB) created successfully.";
+}
+
+# Determine size of a file or total size of a directory
+function fs() {
+	if du -b /dev/null > /dev/null 2>&1; then
+		local arg=-sbh;
+	else
+		local arg=-sh;
 	fi
+	if [[ -n "$@" ]]; then
+		du $arg -- "$@";
+	else
+		du $arg .[^.]* ./*;
+	fi;
+}
+
+# Use Git’s colored diff when available
+hash git &>/dev/null;
+if [ $? -eq 0 ]; then
+	function diff() {
+		git diff --no-index --color-words "$@";
+	}
+fi;
+
+
+# Start an HTTP server from a directory, optionally specifying the port
+function server() {
+	local port="${1:-8000}";
+	sleep 1 && open "http://localhost:${port}/" &
+	# Set the default Content-Type to `text/plain` instead of `application/octet-stream`
+	# And serve everything as UTF-8 (although not technically correct, this doesn’t break anything for binary files)
+	python -c $'import SimpleHTTPServer;\nmap = SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map;\nmap[""] = "text/plain";\nfor key, value in map.items():\n\tmap[key] = value + ";charset=UTF-8";\nSimpleHTTPServer.test();' "$port";
+}
+
+# Start a PHP server from a directory, optionally specifying the port
+# (Requires PHP 5.4.0+.)
+function phpserver() {
+	local port="${1:-4000}";
+	local ip=$(ipconfig getifaddr en1);
+	sleep 1 && open "http://${ip}:${port}/" &
+	php -S "${ip}:${port}";
+}
+
+# `a` with no arguments opens the current directory in Atom Editor, otherwise
+# opens the given location
+function a() {
+	if [ $# -eq 0 ]; then
+		atom .;
+	else
+		atom "$@";
+	fi;
 }

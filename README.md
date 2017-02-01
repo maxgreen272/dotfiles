@@ -1,87 +1,61 @@
-# Joe's dotfiles
-
+# Joe’s dotfiles
 
 ## Installation
 
-```bash
-git clone https://github.com/joegreen0991/dotfiles.git && cd dotfiles && ./sync.sh
-```
+**Warning:** If you want to give these dotfiles a try, you should first fork this repository, review the code, and remove things you don’t want or need. Use at your own risk!
 
-To update later on, just run the sync again.
+### Using Git and the bootstrap script
 
-[mathias's readme](https://github.com/mathiasbynens/dotfiles/) is awesome. go read it.
-
-This repo is mostly for me but you're welcome to make suggestions. Mathias's is the project to fork.  I'm mostly catching up to him, @cowboy, and @gf3.
-
-## install the necessary apps
-
-My basic setup is captured in `install-deps.sh` which adds homebrew, Pygment.
-
-## private config
-
-Toss it into a file called `.extra` which you do not commit to this repo and just keep in your `~/`
-
-I do something nice with my `PATH` there:
-
-```shell
-# PATH like a bawss
-      PATH=/opt/local/bin
-PATH=$PATH:/opt/local/sbin
-PATH=$PATH:/bin
-PATH=$PATH:~/.rvm/bin
-PATH=$PATH:~/code/git-friendly
-# ...
-
-export PATH
-```
-
-## Syntax highlighting
-
-…is really important. even for these files.
-
-Install [Dotfiles Syntax Highlighting](https://github.com/mattbanks/dotfiles-syntax-highlighting-st2) via [Sublime Text 2 Package Control](http://wbond.net/sublime_packages/package_control)
-
-
-### Sensible OS X defaults
-
-When setting up a new Mac, you may want to set some sensible OS X defaults:
+You can clone the repository wherever you want. (I like to keep it in `~/Projects/dotfiles`, with `~/dotfiles` as a symlink.) The bootstrapper script will pull in the latest version and copy the files to your home folder.
 
 ```bash
-./.osx
+git clone https://github.com/mrjgreen/dotfiles.git && cd dotfiles && source bootstrap.sh
 ```
 
-## Similar projects
+To update, `cd` into your local `dotfiles` repository and then:
 
-I recommend getting a [`.jshintrc`](https://github.com/jshint/node-jshint/blob/master/.jshintrc) and [`.editorconfig`](http://editorconfig.org/) defined for all your projects.
+```bash
+source bootstrap.sh
+```
 
+Alternatively, to update while avoiding the confirmation prompt:
 
+```bash
+set -- -f; source bootstrap.sh
+```
 
+### Add custom commands without creating a new fork
 
+If `~/.extra` exists, it will be sourced along with the other files. You can use this to add a few custom commands without the need to fork this entire repository, or to add commands you don’t want to commit to a public repository.
 
-## overview of files
+My `~/.extra` looks something like this:
 
-####  Automatic config
-* `.ackrc` - for ack (better than grep)
-* `.vimrc`, `.vim` - vim config, obv.
+```bash
+# Git credentials
+# Not in the repository, to prevent people from accidentally committing under my name
+GIT_AUTHOR_NAME="Joe Green"
+GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+git config --global user.name "$GIT_AUTHOR_NAME"
+GIT_AUTHOR_EMAIL="mrjgreen@...."
+GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+git config --global user.email "$GIT_AUTHOR_EMAIL"
+```
 
-#### shell environment
-* `.aliases`
-* `.bash_profile`
-* `.bash_prompt`
-* `.bashrc`
-* `.exports`
-* `.functions`
-* `.extra` - not included, explained above
+You could also use `~/.extra` to override settings, functions and aliases from my dotfiles repository. It’s probably better to [fork this repository](https://github.com/mrjgreen/dotfiles/fork) instead, though.
 
-#### manual run
-* `install-deps.sh` - random apps i need installed
-* `.osx` - run on a fresh osx machine
-* `.brew` - homebrew initialization
+### Sensible macOS defaults
 
-#### git, brah
-* `.git`
-* `.gitattributes`
-* `.gitconfig`
-* `.gitignore`
+When setting up a new Mac, you may want to set some sensible macOS defaults:
 
-* `.inputrc` - config for bash readline
+```bash
+./.macos
+```
+
+### Install Homebrew formulae
+
+When setting up a new Mac, you may want to install some common [Homebrew](http://brew.sh/) formulae (after installing Homebrew, of course):
+
+```bash
+./brew.sh
+```
+
