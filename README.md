@@ -1,4 +1,4 @@
-# Joe’s dotfiles
+# Max’s dotfiles
 
 ## Installation
 
